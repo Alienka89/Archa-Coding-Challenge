@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./app.db
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend:/app
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      # Vite dev-server runs inside the container, so "localhost" would
+      # point to itself. We proxy to the backend service over the Docker network.
+      - VITE_API_PROXY_TARGET=http://backend:8000
+    volumes:
+      - ./frontend:/app
+      # Keep container dependencies when mounting the project directory
+      - /app/node_modules
+    depends_on:
+      - backend

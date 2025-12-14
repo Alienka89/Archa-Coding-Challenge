@@ -1,0 +1,466 @@
+{
+  "info": {
+    "name": "Archa API - Smoke & Validation (FastAPI) [No Edge Cases]",
+    "_postman_id": "81f2cc45-3918-4e9b-9f41-fd14b90f231e",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "codeId",
+      "value": ""
+    },
+    {
+      "key": "categoryName",
+      "value": ""
+    },
+    {
+      "key": "codeValue",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Body has status=ok', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 List Categories",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categories",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Create Category (unique, sets categoryId)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const uniqueName = `Travel-${Date.now()}`;",
+              "pm.collectionVariables.set('categoryName', uniqueName);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "const data = pm.response.json();",
+              "pm.test('Has id/name/is_active', function () {",
+              "  pm.expect(data).to.have.property('id');",
+              "  pm.expect(data.name).to.eql(pm.collectionVariables.get('categoryName'));",
+              "  pm.expect(data.is_active).to.eql(true);",
+              "});",
+              "pm.collectionVariables.set('categoryId', data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{categoryName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categories",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 Create Category Duplicate (expects 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{categoryName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categories",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Error code duplicate_name', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.detail.code).to.eql('duplicate_name');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Update Category (uses categoryId)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{categoryName}} Updated\",\n  \"is_active\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categories/{{categoryId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories",
+            "{{categoryId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "const data = pm.response.json();",
+              "pm.test('Updated fields', function () {",
+              "  pm.expect(data.name).to.eql(pm.collectionVariables.get('categoryName') + ' Updated');",
+              "  pm.expect(data.is_active).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 List Codes for Category",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categories/{{categoryId}}/codes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories",
+            "{{categoryId}}",
+            "codes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is array', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Create Code for Category (unique, sets codeId)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const uniqueCode = `FLIGHT-${Math.floor(Math.random()*1000000)}`;",
+              "pm.collectionVariables.set('codeValue', uniqueCode);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "const data = pm.response.json();",
+              "pm.test('Has id/category_id/code/is_active', function () {",
+              "  pm.expect(data).to.have.property('id');",
+              "  pm.expect(String(data.category_id)).to.eql(String(pm.collectionVariables.get('categoryId')));",
+              "  pm.expect(data.code).to.eql(pm.collectionVariables.get('codeValue'));",
+              "  pm.expect(data.is_active).to.eql(true);",
+              "});",
+              "pm.collectionVariables.set('codeId', data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"{{codeValue}}\",\n  \"description\": \"Air travel\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categories/{{categoryId}}/codes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories",
+            "{{categoryId}}",
+            "codes"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 Create Code Duplicate (expects 400 if uniqueness enabled)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"{{codeValue}}\",\n  \"description\": \"Duplicate\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/categories/{{categoryId}}/codes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories",
+            "{{categoryId}}",
+            "codes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201 or 400', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+              "if (pm.response.code === 400) {",
+              "  const body = pm.response.json();",
+              "  pm.test('Error code duplicate_code', function () { pm.expect(body.detail.code).to.eql('duplicate_code'); });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Update Code (uses codeId)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Air travel (updated)\",\n  \"is_active\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/codes/{{codeId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "codes",
+            "{{codeId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "const data = pm.response.json();",
+              "pm.test('Updated fields', function () {",
+              "  pm.expect(data.description).to.eql('Air travel (updated)');",
+              "  pm.expect(data.is_active).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Negative: Get Codes for Missing Category (expects 404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/categories/999999/codes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "categories",
+            "999999",
+            "codes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Error code not_found', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.detail.code).to.eql('not_found');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Negative: Update Missing Code (expects 404)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Nope\",\n  \"is_active\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/codes/999999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "codes",
+            "999999"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Error code not_found', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.detail.code).to.eql('not_found');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

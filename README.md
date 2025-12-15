@@ -17,11 +17,19 @@ docker compose up --build
 ```
 
 Open:
+
+**Local**
+
 - Frontend (UI): http://localhost:5173
 - Backend (API): http://localhost:8001
 - Swagger: http://localhost:8001/docs
 
+**Published**
+
+- Frontend (UI): http://ns-syd.io.lv:5173/
+
 Notes:
+
 - Port mapping is `8001:8000` (host → container).
 - Storage is SQLite (`sqlite:///./app.db`) and is persisted via the backend volume.
 
@@ -69,6 +77,7 @@ This API uses two error “shapes”:
 ```
 
 Status codes are chosen to reflect the brief:
+
 - `400` for invalid input (empty after trimming, duplicates, etc.)
 - `404` for missing resources
 - `500` for unexpected DB errors
@@ -76,11 +85,13 @@ Status codes are chosen to reflect the brief:
 ### Validation rules (summary)
 
 Categories:
+
 - `name` is required, trimmed, must not be empty
 - unique by name
 - `is_active` defaults to `true`
 
 Codes:
+
 - belong to a category
 - `code` is required, trimmed, must not be empty
 - unique within a category (`(category_id, code)` unique constraint)
@@ -103,6 +114,7 @@ This is intended for local demo and manual QA.
 ## Tests
 
 The brief asks for selective tests (not exhaustive). Backend tests cover:
+
 - a success case
 - a failure case (validation, duplicates, not-found)
 
@@ -137,7 +149,7 @@ A Postman collection can be run with Newman.
 Example:
 
 ```bash
-npx newman run archa_postman_collection.fixed.json \
+npx newman run archa_postman_collection.json \
   --env-var "baseUrl=http://localhost:8001" \
   -r json --reporter-json-export postman_run.json
 ```

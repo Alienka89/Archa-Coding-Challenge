@@ -6,6 +6,24 @@ A small full-stack application to manage **Expense Categories** and **Expense Co
 - Frontend: **React (Vite)** + TypeScript + TailwindCSS
 - API docs: Swagger UI
 
+## Reviewer notes (where to look first)
+
+If you only have a few minutes:
+
+1. Open the **live UI** (create/update categories and codes):  
+   http://ns-syd.io.lv:5173/
+
+2. Check the **Swagger docs** locally (request/response shapes, validation rules):  
+   http://localhost:8001/docs
+
+3. Review **tests** to see the minimum expected behaviour captured as executable checks:
+
+- Backend tests: `backend/tests/`
+- Frontend tests: `frontend/` (see the test script in `package.json`)
+
+This repository is organised so you can review it “top-down”:
+UI → API contract → tests → implementation details.
+
 ---
 
 ## Quick start (Docker Compose)
@@ -39,11 +57,26 @@ Stop:
 docker compose down
 ```
 
+## Project tour (code map)
+
+### Frontend
+
+- UI components are extracted for re-use to avoid duplication and keep screens small and readable.
+- API requests are centralised so endpoints / headers / error handling live in one place.
+- Mutations are followed by **cache invalidation** so the UI reflects the latest server state.
+- I implemented **optimistic updates** as an optional perceived-performance optimisation. In a real product we could go further (e.g. prefetch on hover), but the right level of optimisation depends on requirements.
+
+### Backend
+
+- Routers are intentionally thin (request parsing + response mapping).
+- Business logic is kept outside routers (service / use-case style), which makes it easier to test and evolve.
+- Persistence concerns are isolated from the API boundary.
+
 ---
 
 ## Rationale (technology and architecture choices)
 
-- **FastAPI** was selected to demonstrate how performance-sensitive parts of a system can be extracted into standalone microservices. It is lightweight and typically offers excellent throughput for API workloads, although it requires more explicit wiring compared to Django.
+- **FastAPI** was chosen to ship quickly for the challenge and to demonstrate how performance-sensitive parts can be extracted into a small API service. In a CRUD-heavy internal admin app in production, I would often choose **Django** to leverage its built-in validation/admin tooling and reduce handwritten plumbing (smaller bug surface area).
 - **Clean Architecture** was chosen to keep boundaries explicit and make the codebase easier to navigate for engineers with a Django background. This separation of concerns also tends to work well with AI-assisted review and refactoring. For a truly small service, a simpler layered architecture would likely be sufficient.
 
 ---
@@ -113,7 +146,13 @@ This is intended for local demo and manual QA.
 
 ## Tests
 
-The brief asks for selective tests (not exhaustive). Backend tests cover:
+The brief asks for selective tests (not exhaustive).
+
+The goal is to lock in the minimum expected behaviour and provide a safe base for further changes (especially when working independently).
+
+Test data setup is intentionally simple and reusable. If the suite grows, I would introduce factories and pytest plugins/fixtures to reduce boilerplate and speed up iteration.
+
+Backend tests cover:
 
 - a success case
 - a failure case (validation, duplicates, not-found)
